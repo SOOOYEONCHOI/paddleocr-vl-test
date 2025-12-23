@@ -1,0 +1,33 @@
+services:
+  paddle-ocr-vl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: paddle-ocr-vl:latest
+    container_name: paddle-ocr-vl
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "8890:8889"
+    volumes:
+      # 호스트의 현재 폴더를 /app/paddle-ocr-vl 폴더로 마운트
+      - .:/app/paddle-ocr-vl
+      - ./output:/app/paddle-ocr-vl/output
+      - ./data:/app/paddle-ocr-vl/data
+      - ./backup:/app/paddle-ocr-vl/backup
+      # 모델 가중치는 전용 경로 유지
+      - ./models:/root/.paddleocr
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    # 작업 디렉토리를 새로 설정한 폴더로 변경
+    working_dir: /app/paddle-ocr-vl
+    stdin_open: true
+    tty: true
+    restart: unless-stopped

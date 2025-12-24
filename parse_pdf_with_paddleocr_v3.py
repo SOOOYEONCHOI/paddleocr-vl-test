@@ -388,7 +388,7 @@ def process_single_pdf(
 
         full_doc_result.append(page_data)
 
-        # ✅ autosave: 중간 실패해도 md/json이 남게 함
+        # autosave: 중간 실패해도 md/json이 남게 함
         if autosave:
             save_json(save_dir / "structure_result.partial.json", full_doc_result)
             save_text(save_dir / "parsed_document.partial.md", "\n".join(markdown_lines))
@@ -403,7 +403,7 @@ def main():
     debug_versions()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", default="./data", help="Input directory or PDF file")
+    parser.add_argument("--input", default="./data/new/")
     parser.add_argument("--output", default="./output/final_result", help="Output root directory")
     parser.add_argument("--dpi", type=int, default=200)
     parser.add_argument("--lang", default="korean")

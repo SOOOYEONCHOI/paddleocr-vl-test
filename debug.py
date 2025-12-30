@@ -127,22 +127,41 @@ def debug_versions():
 # Engine builders (3.x friendly)
 # =============================================================================
 def _build_with_signature(cls, preferred_kwargs: Dict[str, Any]) -> Any:
-    """cls.__init__ 시그니처를 보고, 지원되는 파라미터만 골라서 넣음."""
-    sig = inspect.signature(cls.__init__)
-    accepted = set(sig.parameters.keys())
-    kwargs = {k: v for k, v in preferred_kwargs.items() if k in accepted}
-    return cls(**kwargs)
+    """
+    cls.__init__ 시그니처를 보고, 지원되는 파라미터만 골라서 넣음.
+    PaddleOCR 3.3.0은 파라미터가 대폭 변경되어 signature 기반 필터링 필수.
+    """
+    try:
+        sig = inspect.signature(cls.__init__)
+        accepted = set(sig.parameters.keys())
+        kwargs = {k: v for k, v in preferred_kwargs.items() if k in accepted}
+        print(f"      Accepted params: {list(kwargs.keys())}")
+        return cls(**kwargs)
+    except Exception as e:
+        print(f"      Signature-based init failed: {e}")
+        # 최후의 수단: lang만 사용
+        if 'lang' in preferred_kwargs:
+            print(f"      Trying with lang only...")
+            return cls(lang=preferred_kwargs['lang'])
+        else:
+            print(f"      Trying with no args...")
+            return cls()
 
 
 def build_ocr_engine(lang: str, use_gpu: bool) -> Any:
-    """PaddleOCR 3.x에서 인자명이 바뀌거나 제거될 수 있어 signature 기반으로 안전하게 생성"""
+    """
+    PaddleOCR 3.3.0은 파라미터가 대폭 변경됨
+    - use_gpu, show_log, use_angle_cls 등 많은 파라미터가 제거됨
+    - 최소한의 파라미터만 사용
+    """
     from paddleocr import PaddleOCR
 
+    # 3.3.0에서는 거의 모든 파라미터가 제거되어 lang만 사용
     base_kwargs = {"lang": lang}
-    base_kwargs["use_gpu"] = use_gpu
-    base_kwargs["use_textline_orientation"] = True
-    base_kwargs["use_angle_cls"] = True
-    base_kwargs["show_log"] = False
+    
+    # GPU는 환경변수나 다른 방식으로 설정될 수 있음
+    if use_gpu:
+        print("      Note: GPU setting may be ignored in PaddleOCR 3.3.0")
 
     return _build_with_signature(PaddleOCR, base_kwargs)
 
@@ -172,7 +191,7 @@ def build_doc_engine(lang: str, use_gpu: bool) -> Tuple[Any, str]:
             continue
 
         try:
-            base_kwargs = {"lang": lang, "use_gpu": use_gpu, "show_log": False}
+            base_kwargs = {"lang": lang, "use_gpu": use_gpu}
             engine = _build_with_signature(cls, base_kwargs)
             return engine, name
         except Exception as e:

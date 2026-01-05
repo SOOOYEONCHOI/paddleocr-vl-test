@@ -389,6 +389,32 @@ def process_single_pdf(
     img_dir = save_dir / "images"
     table_dir = save_dir / "tables"
 
+    # --------------------------------------------------------------------------
+    # [Modify] PaddleOCRVL 전용 로직 (User Request)
+    # --------------------------------------------------------------------------
+    if engine_type == "VL":
+        print(f"   [Info] Using PaddleOCRVL Pipeline for {pdf_path.name}")
+        save_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            # 파이프라인 실행: PDF 파일 경로를 직접 전달
+            output = engine.predict(str(pdf_path))
+            
+            # 결과 저장 및 출력
+            for res in output:
+                res.print()  # 콘솔 출력
+                res.save_to_json(save_path=str(save_dir))         # JSON 저장
+                res.save_to_markdown(save_path=str(save_dir))     # Markdown 저장
+            
+            print(f"   [Done] PaddleOCRVL processing complete. Saved to: {save_dir}")
+            return
+            
+        except Exception as e:
+            print(f"   [Error] PaddleOCRVL pipeline failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return
+
+    # 기존 로직 (DOC/OCR): PDF -> Image 변환 후 페이지별 처리
     image_paths = render_pdf_to_images(pdf_path, img_dir, dpi)
 
     full_doc_result: List[Dict[str, Any]] = []

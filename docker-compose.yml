@@ -1,36 +1,38 @@
 services:
-  docling-gpu-server:
+  paddle-ocr-vl:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: docling-gpu-server
-    image: docling-gpu-server:latest
-    ports:
-      - "8008:8008" # FastAPI
-      - "8888:8888" # Jupyter Lab
-    environment:
-      - PORT=8008
-      - API_KEY=${API_KEY:-your-secret-api-key-here}
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
-      - DOCLING_CMD=${DOCLING_CMD:-docling}
-    command: /bin/bash ./start.sh
-    volumes:
-      # 프로젝트 루트 전체를 /app에 마운트 (개발 시 코드/설정 변경 사항 즉시 반영)
-      - .:/app
-      
+    image: paddle-ocr-vl:latest
+    container_name: paddle-ocr-vl-test
+    
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              count: all
               capabilities: [gpu]
-              
+    
+    # 호스트 8890 → 컨테이너 8890 포트 매핑
+    ports:
+      - "8890:8890"
+
+    volumes:
+      # 호스트의 현재 폴더를 /app 폴더로 마운트
+      - .:/app
+      # 모델 가중치는 전용 경로 유지(모델 가중치 영구 보존)
+      - ./models:/root/.paddleocr
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PATH=/opt/venv/bin:$PATH
+      - VIRTUAL_ENV=/opt/venv
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    
+    # 작업 디렉토리를 새로 설정한 폴더로 변경
+    working_dir: /app
+    stdin_open: true
+    tty: true
     restart: unless-stopped
-    networks:
-      - docling-network
-
-networks:
-  docling-network:
-    driver: bridge
-

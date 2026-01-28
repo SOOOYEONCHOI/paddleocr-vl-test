@@ -24,6 +24,10 @@ services:
       # 모델 가중치는 전용 경로 유지(모델 가중치 영구 보존)
       - ./models:/root/.paddleocr
 
+    # .env 파일에서 환경변수 로드 (LLM 설정 등)
+    env_file:
+      - .env
+
     environment:
       - PYTHONUNBUFFERED=1
       - PATH=/opt/venv/bin:$PATH

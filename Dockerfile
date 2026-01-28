@@ -34,22 +34,31 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir "paddleocr==3.3.0" "paddlex[ocr]" \
     jupyterlab ipykernel py-cpuinfo opencv-python-headless pymupdf pillow
 
-# 6. Jupyter Lab 설정 (포트 8890 지정)
-RUN mkdir -p /app/.jupyter && \
-    echo "c.ServerApp.ip = '0.0.0.0'" >> /app/.jupyter/jupyter_lab_config.py && \
-    echo "c.ServerApp.port = 8890" >> /app/.jupyter/jupyter_lab_config.py && \
-    echo "c.ServerApp.open_browser = False" >> /app/.jupyter/jupyter_lab_config.py && \
-    echo "c.ServerApp.allow_root = True" >> /app/.jupyter/jupyter_lab_config.py && \
-    echo "c.ServerApp.token = ''" >> /app/.jupyter/jupyter_lab_config.py && \
-    echo "c.ServerApp.password = ''" >> /app/.jupyter/jupyter_lab_config.py
-ENV JUPYTER_CONFIG_DIR=/app/.jupyter
+# 6. LLM 추출 관련 패키지 설치 (LangChain + Pydantic)
+RUN pip install --no-cache-dir \
+    langchain-core==0.3.68 \
+    langchain-openai==0.3.27 \
+    langchain-ollama==0.3.4 \
+    langchain-community==0.3.27 \
+    pydantic>=2.0.0 \
+    python-dotenv==1.1.1
 
-# 7. 소스 코드 복사 및 권한 설정
+# 7. Jupyter Lab 설정 (포트 8890 지정)
+RUN mkdir -p /root/.jupyter && \
+    echo "c.ServerApp.ip = '0.0.0.0'" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.port = 8890" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.open_browser = False" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.allow_root = True" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.token = ''" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.password = ''" >> /root/.jupyter/jupyter_lab_config.py
+ENV JUPYTER_CONFIG_DIR=/root/.jupyter
+
+# 8. 소스 코드 복사 및 권한 설정
 COPY . /app/
 RUN chmod -R 755 /app
 
-# 8. 포트 개방
+# 9. 포트 개방
 EXPOSE 8890
 
-# 9. 서비스 시작
-CMD ["jupyter", "lab", "--config=/app/.jupyter/jupyter_lab_config.py", "--allow-root"]
+# 10. 서비스 시작
+CMD ["jupyter", "lab", "--config=/root/.jupyter/jupyter_lab_config.py", "--allow-root"]
